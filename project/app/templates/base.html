@@ -1,0 +1,277 @@
+{% load static %} {% static 'images' as base_url%}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Inline Edit</title>
+
+    <!-- BootStrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+
+    <!-- JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+
+    <!-- BootStrap JS -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"
+    ></script>
+
+    <style>
+      h2 {
+        padding-top: 5px;
+      }
+      img {
+        height: 400px;
+      }
+      #content {
+        text-align: center;
+      }
+      #txt_over_img {
+        position: absolute;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #003060;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col col-md-5">
+          <div id="content">
+            {% for i in backEnd_data %}
+            <h3 class="editable" contenteditable="true" id="nm_head">
+              {{i.name_heading}}
+            </h3>
+            <p class="editable" contenteditable="true" id="nm_cont">
+              {{i.name_content}}
+            </p>
+            <h3 class="editable" contenteditable="true" id="ocptn_head">
+              {{i.occupation_heading}}
+            </h3>
+            <p class="editable" contenteditable="true" id="ocptn_cont">
+              {{i.occupation_content}}
+            </p>
+            <h3 class="editable" contenteditable="true" id="ctry_head">
+              {{i.country_heading}}
+            </h3>
+            <p class="editable" contenteditable="true" id="ctry_cont">
+              {{i.country_content}}
+            </p>
+
+            <h3>Data Length</h3>
+            <h4>{{data_length}}</h4>
+            <h3>ID</h3>
+            <p id="id_p">{{i.id|default_if_none:"NO ID Present"}}</p>
+          </div>
+        </div>
+        {% comment %} src="{{base_url}}/17973908.jpg" {% endcomment %}
+
+        <div class="col col-md-3">
+          <div>
+            <input type="file" id="bg_inp" style="display: none" />
+            <img src="{{image_path}}" alt="background" id="bg_img" />
+          </div>
+          <h3 class="editable" contenteditable="true" id="txt_over_img">
+            {{i.txt_over_img}}
+          </h3>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <script>
+            $(document).ready(function () {
+
+              // Update the src attribute of the <img> element
+              {% comment %} document.getElementById("logo-image").src = imageSrc; {% endcomment %}
+
+              nm_head = $("#nm_head").text();
+              nm_cont = $("#nm_cont").text();
+
+              ocptn_head = $("#ocptn_head").text();
+              ocptn_cont = $("#ocptn_cont").text();
+
+              ctry_head = $("#ctry_head").text();
+              ctry_cont = $("#ctry_cont").text();
+
+              bg_img = $("#bg_img").attr("src");
+
+              txt_over_img = $("#txt_over_img").text();
+
+              var id_present=$("#id_p").text()
+
+              console.log("background Image src:", $("#bg_img").attr("src"))
+
+              var fd= new FormData()
+              fd.append("id",self.crypto.randomUUID())
+              fd.append("nm_head",nm_head)
+              fd.append("nm_cont",nm_cont)
+              fd.append("ocptn_head",ocptn_head)
+              fd.append("ocptn_cont",ocptn_cont)
+              fd.append("ctry_head",ctry_head)
+              fd.append("ctry_cont",ctry_cont)
+              fd.append("bg_img",$("#bg_inp")[0].files[0])
+              fd.append("txt_over_img",txt_over_img)
+              fd.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
+
+
+      {% comment %}
+              my_data = {
+                id: self.crypto.randomUUID(),
+                nm_head: nm_head,
+                nm_cont: nm_cont,
+
+                ocptn_head: ocptn_head,
+                ocptn_cont: ocptn_cont,
+
+                ctry_head: ctry_head,
+                ctry_cont: ctry_cont,
+
+                bg_img: bg_img,
+
+                txt_over_img: txt_over_img,
+              }; {% endcomment %}
+
+              {% comment %} $("#bg_img").attr("src",Object.values(my_data["bg_img"])); {% endcomment %}
+
+              {% comment %} console.log(my_data.bg_img) {% endcomment %}
+
+
+              function updateContent(updated_data){
+                $.ajax({
+                  url:"{% url 'updateContent' %}",
+                  method:"POST",
+                  data:updated_data,
+                  processData:false,
+                  contentType:false,
+                  success:function(res){
+
+                    $("#bg_img").attr("src",res.image_path)
+                    $("#id_p").text(res.new_id)
+
+                    console.log(res.message);
+                    console.log("Updated Image src: ",res.image_path)
+                  },
+                  error: function (jqXHR, textStatus, errorThrown) {
+                      console.log("Failed to UPDATE Data!\n",textStatus,":",errorThrown);
+                  },
+                  })
+              }
+
+
+
+              {% comment %}
+                                For Updatng Data
+              {% endcomment %}
+
+              $(".editable").off("click").on("click",function(event){
+                event.preventDefault()
+                  elemId=$(this).attr("id")
+                  var txt=$(this).text().trim()
+
+
+                  $(".editable").off("blur").on("blur",function(){
+                    var new_txt=$(this).text().trim()
+                    if(new_txt===txt)
+                    {
+                      console.log("No changes...")
+                    }
+                    else{
+                      console.log("New text: ",new_txt)
+
+                      {% comment %} my_data[elemId]=new_txt {% endcomment %}
+
+
+                      if(id_present){
+                        console.log("ID present: ",id_present)
+                      }
+                      fd.set("id",id_present)
+                      fd.set(elemId,new_txt)
+
+                      updateContent(fd)
+                    }
+                })
+              })
+
+
+              {% comment %}
+                          For Updatng Image
+              {% endcomment %}
+
+              $("#bg_img").dblclick(function(){
+                $("#bg_inp").trigger("click")
+              })
+
+              $("#bg_inp").change(function(){
+
+                var imageName=""
+
+                imageInput=$("#bg_inp").val()
+
+
+                // Regular expression pattern to extract the image file name
+                var regexPattern = /([^\\\/]+)\.(jpg|jpeg|png|gif)$/i;
+
+                // Extract the image file name from the input value using regex
+                var match = regexPattern.exec(imageInput);
+                if (match !== null) {
+
+                  imageName = match[0];
+
+                } else {
+                  alert("Invalid image input!");
+                }
+
+                if(id_present){
+                  console.log("ID present: ",id_present)
+                }
+                fd.set("id",id_present)
+                fd.set('bg_img',  $("#bg_inp")[0].files[0],  imageName)
+
+                // Add CSRF token to the form data
+                fd.set('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
+
+                updateContent(fd)
+              })
+
+              {% comment %}
+              For Adding data
+              {% endcomment %}
+
+
+              {% if data_length > 0 %}
+              console.log("Data present in BackEnd !")
+              return
+
+              {% else %}
+
+              $.ajax({
+                  url: "{% url 'addContent' %}",
+                  method: "POST",
+                  data: fd,
+                  processData:false,
+                  contentType:false,
+                  success: function (res) {
+                    console.log(res);
+                  },
+                  error: function () {
+                    console.log("Failed to Add Data!");
+                  },
+                });
+
+              {% endif %}
+
+
+            });
+    </script>
+  </body>
+</html>
